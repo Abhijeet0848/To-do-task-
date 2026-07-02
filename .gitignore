@@ -1,0 +1,9 @@
+# Sensitive data
+.env
+config.json
+*.key
+
+# Dependencies and logs
+node_modules/
+venv/
+*.log
