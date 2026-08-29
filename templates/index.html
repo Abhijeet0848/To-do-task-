@@ -1,219 +1,356 @@
-<!doctype html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-
-    <title>To-do App</title>
-</head>
-
-<body>
-    <nav class="navbar navbar-expand-lg bg-primary navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="{{ url_for('input') }}">📝 To‑Do App</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
-                aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{ url_for('input') }}">All Tasks</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('input') }}?status=completed">Completed</a>
-                    </li>
-                </ul>
-                <span class="navbar-text">
-                    Stay organized, Abhijeet!
-                </span>
+{% block content %}
+<!-- ==========================================================================
+     BOARD VIEW
+     ========================================================================== -->
+<div id="board-view" class="view-container">
+    <!-- Dashboard Stats -->
+    <section class="stats-section">
+        <div class="glass-card stat-card" id="stat-total">
+            <div class="stat-icon-wrapper blue">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Total Tasks</span>
+                <span class="stat-value" id="stats-total-val">{{ stats.total }}</span>
             </div>
         </div>
-    </nav>
+        
+        <div class="glass-card stat-card" id="stat-pending">
+            <div class="stat-icon-wrapper orange">
+                <i class="fa-solid fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Pending</span>
+                <span class="stat-value" id="stats-pending-val">{{ stats.pending }}</span>
+            </div>
+        </div>
 
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="glass-card stat-card" id="stat-completed">
+            <div class="stat-icon-wrapper green">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Completed</span>
+                <span class="stat-value" id="stats-completed-val">{{ stats.completed }}</span>
+            </div>
+        </div>
+
+        <div class="glass-card stat-card" id="stat-progress">
+            <div class="stat-content-full">
+                <div class="progress-info">
+                    <span class="stat-label">Completion Rate</span>
+                    <span class="stat-value" id="stats-rate-val">{{ stats.completion_rate }}%</span>
                 </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <div class="container my-4">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Add New Task</h5>
-            </div>
-            <div class="card-body">
-                <form action="/" method="POST">
-                    <div class="mb-3">
-                        <label for="title" class="form-label">Task Title <span class="text-danger">*</span></label>
-                        <input type="text" name="title" class="form-control" id="title" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <input type="text" name="description" class="form-control" id="description">
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="priority" class="form-label">Priority</label>
-                            <select name="priority" class="form-select" id="priority">
-                                <option value="high">High</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="low">Low</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="due_date" class="form-label">Due Date</label>
-                            <input type="date" name="due_date" class="form-control" id="due_date">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="category" class="form-label">Category</label>
-                            <input type="text" name="category" class="form-control" id="category" placeholder="General">
-                        </div>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" name="complete" id="complete">
-                        <label class="form-check-label" for="complete">
-                            Mark as complete
-                        </label>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Add Task</button>
-                </form>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="stats-progress-bar" style="width: {{ stats.completion_rate }}%"></div>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="container my-4">
-        <!-- Search and Filters -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <form class="row g-3" method="GET" action="{{ url_for('input') }}">
-                    <div class="col-md-4">
-                        <input type="text" name="search" class="form-control" placeholder="Search tasks..." value="{{ request.args.get('search', '') }}">
-                    </div>
-                    <div class="col-md-3">
-                        <select name="status" class="form-select">
-                            <option value="all" {% if request.args.get('status') == 'all' %}selected{% endif %}>All Status</option>
-                            <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select name="priority" class="form-select">
-                            <option value="all" {% if request.args.get('priority') == 'all' %}selected{% endif %}>All Priorities</option>
-                            <option value="high" {% if request.args.get('priority') == 'high' %}selected{% endif %}>High</option>
-                            <option value="medium" {% if request.args.get('priority') == 'medium' %}selected{% endif %}>Medium</option>
-                            <option value="low" {% if request.args.get('priority') == 'low' %}selected{% endif %}>Low</option>
-                        </select>
-                    </div>
-                    <div class="col-md-1">
-                        <button type="submit" class="btn btn-warning w-100">Filter</button>
-                    </div>
-                    <div class="col-md-1">
-                        <button type="submit" class="btn btn-primary w-100">Search</button>
-                    </div>
-                    <div class="col-md-2">
-                        <a href="{{ url_for('input') }}" class="btn btn-secondary w-100">Clear</a>
-                    </div>
-                </form>
+    <!-- Filter & Control Section -->
+    <section class="control-section">
+        <div class="search-bar-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search tasks by title or description..." autocomplete="off">
+            <button id="search-clear-btn" class="search-clear-btn hidden" aria-label="Clear search">&times;</button>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="/api/tasks/export/csv" class="btn btn-secondary" title="Export tasks to CSV file" aria-label="Export to CSV">
+                <i class="fa-solid fa-file-csv"></i> <span>CSV</span>
+            </a>
+            <a href="/api/tasks/export/pdf" class="btn btn-secondary" title="Export tasks to PDF document" aria-label="Export to PDF">
+                <i class="fa-solid fa-file-pdf"></i> <span>PDF</span>
+            </a>
+            <button id="add-task-btn" class="btn btn-primary" aria-label="Add New Task">
+                <i class="fa-solid fa-plus"></i> <span>Add Task</span>
+            </button>
+        </div>
+    </section>
+
+    <section class="filter-section">
+        <div class="category-filters-container">
+            <div class="category-filters" id="category-filter-group">
+                <button class="filter-chip active" data-category="">All</button>
+                <button class="filter-chip" data-category="personal"><i class="fa-solid fa-user"></i> Personal</button>
+                <button class="filter-chip" data-category="work"><i class="fa-solid fa-briefcase"></i> Work</button>
+                <button class="filter-chip" data-category="shopping"><i class="fa-solid fa-cart-shopping"></i> Shopping</button>
+                <button class="filter-chip" data-category="fitness"><i class="fa-solid fa-heart-pulse"></i> Fitness</button>
+                <button class="filter-chip" data-category="urgent"><i class="fa-solid fa-fire"></i> Urgent</button>
+                <button class="filter-chip" data-category="coding"><i class="fa-solid fa-code"></i> Coding</button>
             </div>
         </div>
-
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Your Tasks</h2>
-            <a href="{{ url_for('delete_all') }}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete all tasks?')">Delete All Tasks</a>
+        
+        <div class="priority-sort-wrapper">
+            <span class="filter-label"><i class="fa-solid fa-arrow-down-wide-short"></i> Priority:</span>
+            <select id="priority-filter" class="select-dropdown" aria-label="Filter tasks by priority">
+                <option value="">All Priorities</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+            </select>
         </div>
+    </section>
 
-        {% if todos %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th scope="col">ID</th>
-                        <th scope="col">Title</th>
-                        <th scope="col">Description</th>
-                        <th scope="col">Category</th>
-                        <th scope="col">Priority</th>
-                        <th scope="col">Due Date</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Created</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for todo in todos %}
-                    <tr class="{% if todo.complete %}table-success{% endif %}">
-                        <td>{{ todo.id }}</td>
-                        <td>{{ todo.title }}</td>
-                        <td>{{ todo.description or '-' }}</td>
-                        <td><span class="badge bg-info">{{ todo.category }}</span></td>
-                        <td>
-                            {% if todo.priority == 'high' %}
-                                <span class="badge bg-danger">High</span>
-                            {% elif todo.priority == 'medium' %}
-                                <span class="badge bg-warning text-dark">Medium</span>
-                            {% else %}
-                                <span class="badge bg-success">Low</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if todo.due_date %}
-                                {% if todo.due_date < now() and not todo.complete %}
-                                    <span class="text-danger fw-bold">{{ todo.due_date.strftime('%Y-%m-%d') }}</span>
-                                {% else %}
-                                    {{ todo.due_date.strftime('%Y-%m-%d') }}
-                                {% endif %}
-                            {% else %}
-                                <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if todo.complete %}
-                                <span class="badge bg-success">Completed</span>
-                            {% else %}
-                                <span class="badge bg-warning text-dark">Pending</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ todo.date.strftime('%Y-%m-%d') }}</td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                <a href="{{ url_for('toggle', id=todo.id) }}" class="btn btn-sm btn-info" title="Toggle Status">
-                                    {% if todo.complete %}↩️{% else %}✓{% endif %}
-                                </a>
-                                <a href="{{ url_for('edit', id=todo.id) }}" class="btn btn-sm btn-warning">Edit</a>
-                                <a href="{{ url_for('delete', id=todo.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</a>
+    <!-- Task Container -->
+    <section class="tasks-section">
+        <div id="tasks-container" class="tasks-grid">
+            {% if tasks %}
+                {% for task in tasks %}
+                <div class="glass-card task-card {% if task.is_completed %}completed{% endif %} priority-{{ task.priority }}" data-id="{{ task.id }}" draggable="true">
+                    <div class="task-card-left">
+                        <div class="drag-handle" title="Drag to reorder" aria-label="Drag handle">
+                            <i class="fa-solid fa-grip-vertical"></i>
+                        </div>
+                        <button class="checkbox-btn" aria-label="Toggle task completion" onclick="toggleTaskCompletion({{ task.id }})">
+                            <span class="checkbox-circle">
+                                <i class="fa-solid fa-check checkmark-icon"></i>
+                            </span>
+                        </button>
+                    </div>
+                    
+                    <div class="task-card-content">
+                        <div class="task-header">
+                            <h3 class="task-title">{{ task.title }}</h3>
+                            <div class="task-badges">
+                                <span class="badge badge-priority-{{ task.priority }}">{{ task.priority | capitalize }}</span>
+                                <span class="badge badge-category-{{ task.category }}">{{ task.category | capitalize }}</span>
                             </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        </div>
+                        {% if task.description %}
+                            <p class="task-desc">{{ task.description }}</p>
+                        {% endif %}
+                        
+                        <!-- Attachments List inside Card -->
+                        {% if task.attachments %}
+                            <div class="task-card-attachments">
+                                {% for attachment in task.attachments %}
+                                    <a href="/api/tasks/attachments/{{ attachment.id }}/download" class="attachment-chip" title="Download {{ attachment.filename }}">
+                                        <i class="fa-solid fa-paperclip"></i> <span>{{ attachment.filename }}</span>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="task-meta">
+                            {% if task.due_date %}
+                                <span class="task-due {% if not task.is_completed and task.due_date < date.today() %}overdue{% endif %}">
+                                    <i class="fa-regular fa-calendar-days"></i> Due: {{ task.due_date.strftime('%b %d, %Y') }}
+                                </span>
+                            {% endif %}
+                            <span class="task-created">
+                                <i class="fa-regular fa-clock"></i> {{ task.created_at.strftime('%b %d') }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="task-card-actions">
+                        <button class="action-icon-btn edit-btn" title="Edit Task" aria-label="Edit Task" onclick="openEditModal({{ task.id }})">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button class="action-icon-btn delete-btn" title="Delete Task" aria-label="Delete Task" onclick="deleteTask({{ task.id }})">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Empty state -->
+                <div class="empty-state-card glass-card" id="empty-state">
+                    <div class="empty-icon-wrapper">
+                        <i class="fa-solid fa-feather-pointed"></i>
+                    </div>
+                    <h3>Your Zen board is clear</h3>
+                    <p>Relax, or tap the button above to add a new task to your day.</p>
+                </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="alert alert-info text-center">
-            <h5>No tasks found</h5>
-            <p class="mb-0">Add a new task to get started!</p>
+    </section>
+</div>
+
+<!-- ==========================================================================
+     CALENDAR VIEW
+     ========================================================================== -->
+<div id="calendar-view" class="view-container hidden">
+    <section class="glass-card calendar-wrapper">
+        <div class="calendar-header">
+            <button id="prev-month-btn" class="header-btn" title="Previous Month" aria-label="Previous Month">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <h2 id="calendar-month-title">Month Year</h2>
+            <button id="next-month-btn" class="header-btn" title="Next Month" aria-label="Next Month">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
         </div>
-        {% endif %}
+        
+        <div class="calendar-weekdays">
+            <div>Sun</div>
+            <div>Mon</div>
+            <div>Tue</div>
+            <div>Wed</div>
+            <div>Thu</div>
+            <div>Fri</div>
+            <div>Sat</div>
+        </div>
+        
+        <div id="calendar-grid" class="calendar-grid">
+            <!-- Rendered dynamically via JS -->
+        </div>
+    </section>
+</div>
+
+<!-- ==========================================================================
+     ANALYTICS VIEW
+     ========================================================================== -->
+<div id="analytics-view" class="view-container hidden">
+    <!-- Row of analytics stats -->
+    <section class="stats-section">
+        <div class="glass-card stat-card">
+            <div class="stat-icon-wrapper blue">
+                <i class="fa-solid fa-tasks"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Total Tasks</span>
+                <span class="stat-value" id="anal-total-val">0</span>
+            </div>
+        </div>
+        <div class="glass-card stat-card">
+            <div class="stat-icon-wrapper green">
+                <i class="fa-solid fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Completed</span>
+                <span class="stat-value" id="anal-completed-val">0</span>
+            </div>
+        </div>
+        <div class="glass-card stat-card">
+            <div class="stat-icon-wrapper orange">
+                <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Pending</span>
+                <span class="stat-value" id="anal-pending-val">0</span>
+            </div>
+        </div>
+        <div class="glass-card stat-card">
+            <div class="stat-icon-wrapper purple">
+                <i class="fa-solid fa-percent"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Completion %</span>
+                <span class="stat-value" id="anal-rate-val">0%</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Analytics Charts Grid -->
+    <div class="analytics-charts-grid">
+        <!-- Productivity history chart -->
+        <div class="glass-card chart-card">
+            <h3 class="chart-title">
+                <i class="fa-solid fa-chart-line" style="color: var(--primary);"></i> Productivity (Last 14 Days)
+            </h3>
+            <div class="chart-canvas-wrapper">
+                <canvas id="productivity-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Priority distribution chart -->
+        <div class="glass-card chart-card">
+            <h3 class="chart-title">
+                <i class="fa-solid fa-chart-pie" style="color: var(--priority-high);"></i> Tasks by Priority
+            </h3>
+            <div class="chart-canvas-wrapper pie-wrapper">
+                <canvas id="priority-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Category breakdown chart -->
+        <div class="glass-card chart-card full-width-chart">
+            <h3 class="chart-title">
+                <i class="fa-solid fa-chart-bar" style="color: var(--category-fitness);"></i> Tasks by Category
+            </h3>
+            <div class="chart-canvas-wrapper">
+                <canvas id="category-chart"></canvas>
+            </div>
+        </div>
     </div>
+</div>
 
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
-        crossorigin="anonymous"></script>
-</body>
+<!-- ==========================================================================
+     TASK FORM MODAL (Create & Edit)
+     ========================================================================== -->
+<div id="task-modal" class="modal-overlay">
+    <div class="glass-card modal-content animate-pop">
+        <div class="modal-header">
+            <h2 id="modal-title">Create New Task</h2>
+            <button id="close-modal-btn" class="close-btn" aria-label="Close modal">&times;</button>
+        </div>
+        <form id="task-form">
+            <input type="hidden" id="task-id-input">
+            
+            <div class="form-group">
+                <label for="task-title-input">Task Title *</label>
+                <input type="text" id="task-title-input" required placeholder="What needs to be done?" maxlength="100" autocomplete="off">
+            </div>
 
-</html>
+            <div class="form-group">
+                <label for="task-desc-input">Description</label>
+                <textarea id="task-desc-input" placeholder="Add details, notes, or steps..." rows="3" maxlength="2000"></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group half">
+                    <label for="task-category-input">Category</label>
+                    <select id="task-category-input" class="select-dropdown">
+                        <option value="personal">Personal</option>
+                        <option value="work">Work</option>
+                        <option value="shopping">Shopping</option>
+                        <option value="fitness">Fitness</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="coding">Coding</option>
+                    </select>
+                </div>
+
+                <div class="form-group half">
+                    <label for="task-priority-input">Priority</label>
+                    <select id="task-priority-input" class="select-dropdown">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="task-date-input">Due Date</label>
+                <input type="date" id="task-date-input" class="date-input">
+            </div>
+
+            <!-- File Attachments Form Section -->
+            <div class="form-group" id="modal-attachments-section" style="display: none;">
+                <label>Attachments (Max 16MB)</label>
+                <div id="modal-attachments-list">
+                    <!-- Populated dynamically via JS -->
+                </div>
+                <div class="attachment-upload-zone" id="attachment-dropzone">
+                    <i class="fa-solid fa-cloud-arrow-up upload-zone-icon"></i>
+                    <p class="upload-zone-text">Click or drag files here to attach</p>
+                    <p class="upload-zone-hint">Supported: PNG, JPG, PDF, TXT, CSV, DOCX, ZIP</p>
+                    <input type="file" id="attachment-file-input" style="display: none;">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="cancel-modal-btn" class="btn btn-secondary">Cancel</button>
+                <button type="submit" id="save-task-btn" class="btn btn-primary">
+                    <i class="fa-solid fa-check"></i> Save Task
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

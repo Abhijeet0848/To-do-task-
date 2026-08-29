@@ -1,9 +1,30 @@
-# Sensitive data
-.env
-config.json
-*.key
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Dependencies and logs
-node_modules/
+# Virtual environments
 venv/
+.venv/
+env/
+ENV/
+
+# Environment and sensitive configuration
+.env
+.env.local
+
+# SQLite Databases
+*.db
+*.sqlite3
+
+# Uploaded user files (keep directory, exclude files)
+uploads/*
+!uploads/.gitkeep
+
+# Logs
 *.log
+sent_emails.log
+
+# OS generated files
+.DS_Store
+Thumbs.db

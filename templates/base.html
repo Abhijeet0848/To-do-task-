@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="description" content="ZenTask - A secure, glassmorphic, ultra-responsive task management system.">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>ZenTask // Premium Task Manager</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    
+    <script>
+        // Theme initialization to avoid flash
+        (function() {
+            const savedTheme = localStorage.getItem('zentask-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <div class="app-background-glow"></div>
+    <div class="app-container">
+        <!-- Navigation bar -->
+        <header class="app-header">
+            <div class="header-left">
+                <a href="{{ url_for('index') if g.user else url_for('login') }}" class="header-logo" style="text-decoration: none;">
+                    <i class="fa-solid fa-wind logo-icon"></i>
+                    <span class="logo-text">ZenTask</span>
+                </a>
+            </div>
+            
+            {% if g.user %}
+            <nav class="app-nav desktop-nav">
+                <button class="nav-tab active" data-view="board" aria-label="Board View"><i class="fa-solid fa-square-poll-horizontal"></i> <span>Board</span></button>
+                <button class="nav-tab" data-view="calendar" aria-label="Calendar View"><i class="fa-regular fa-calendar"></i> <span>Calendar</span></button>
+                <button class="nav-tab" data-view="analytics" aria-label="Analytics View"><i class="fa-solid fa-chart-line"></i> <span>Analytics</span></button>
+            </nav>
+            {% endif %}
+
+            <div class="header-actions">
+                {% if g.user %}
+                <div class="user-pill" title="Logged in as {{ g.user.username }}">
+                    <i class="fa-solid fa-user-circle user-avatar-icon"></i>
+                    <span class="username-text">{{ g.user.username }}</span>
+                </div>
+                
+                <div class="notifications-wrapper">
+                    <button id="notif-btn" class="header-btn" title="Notifications" aria-label="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                        <span id="notif-badge" class="badge-count hidden">0</span>
+                    </button>
+                    <div id="notif-panel" class="notif-panel glass-card">
+                        <div class="notif-header">
+                            <h3>Notifications</h3>
+                            <button id="mark-all-read-btn" class="btn-text">Mark all as read</button>
+                        </div>
+                        <div id="notif-list" class="notif-list">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <button id="settings-btn" class="header-btn" title="System Settings" aria-label="System Settings">
+                    <i class="fa-solid fa-cog"></i>
+                </button>
+                {% endif %}
+
+                <button id="theme-toggle-btn" class="header-btn" title="Toggle Light/Dark Theme" aria-label="Toggle Light/Dark Theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+
+                {% if g.user %}
+                <a href="{{ url_for('logout') }}" id="logout-btn" class="header-btn" title="Log Out" aria-label="Log Out">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
+                {% endif %}
+            </div>
+        </header>
+
+        {% if g.user %}
+        <!-- Mobile Bottom / Sub Navigation Bar -->
+        <div class="mobile-nav-bar">
+            <button class="mobile-nav-tab active" data-view="board">
+                <i class="fa-solid fa-square-poll-horizontal"></i>
+                <span>Board</span>
+            </button>
+            <button class="mobile-nav-tab" data-view="calendar">
+                <i class="fa-regular fa-calendar"></i>
+                <span>Calendar</span>
+            </button>
+            <button class="mobile-nav-tab" data-view="analytics">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Analytics</span>
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="app-footer">
+            <p>&copy; 2026 ZenTask. Designed for peak productivity and security.</p>
+        </footer>
+    </div>
+
+    {% if g.user %}
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="glass-card modal-content animate-pop">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-sliders" style="color: var(--primary); margin-right: 0.5rem;"></i> System Settings</h2>
+                <button id="close-settings-btn" class="close-btn" aria-label="Close Settings">&times;</button>
+            </div>
+            <form id="settings-form">
+                <div class="form-group">
+                    <label for="settings-email">Email Address for Reminders</label>
+                    <input type="email" id="settings-email" placeholder="name@example.com" maxlength="120">
+                </div>
+                <div class="form-group checkbox-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="settings-reminders-enabled" style="width: 1.1rem; height: 1.1rem; cursor: pointer;">
+                    <label for="settings-reminders-enabled" style="margin: 0; cursor: pointer; font-size: 0.9rem;">Enable Daily Email Reminders</label>
+                </div>
+                
+                <h3 class="settings-section-title">SMTP Mail Server (Optional)</h3>
+                <p class="settings-section-desc">By default, reminders are simulated and logged safely. Configure SMTP credentials below to send live emails.</p>
+                
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="settings-smtp-server">SMTP Server</label>
+                        <input type="text" id="settings-smtp-server" placeholder="smtp.gmail.com" maxlength="120">
+                    </div>
+                    <div class="form-group half">
+                        <label for="settings-smtp-port">SMTP Port</label>
+                        <input type="number" id="settings-smtp-port" placeholder="587" min="1" max="65535">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="settings-smtp-user">SMTP Username</label>
+                        <input type="text" id="settings-smtp-user" placeholder="username@gmail.com" maxlength="120">
+                    </div>
+                    <div class="form-group half">
+                        <label for="settings-smtp-pass">SMTP Password</label>
+                        <input type="password" id="settings-smtp-pass" placeholder="••••••••" maxlength="120" autocomplete="new-password">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Email Simulation Log</label>
+                    <div id="email-log-viewer" class="code-viewer">
+                        <!-- Loaded from server -->
+                    </div>
+                    <button type="button" id="refresh-email-logs-btn" class="btn btn-secondary btn-sm" style="margin-top: 0.5rem; padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                        <i class="fa-solid fa-sync"></i> Refresh Log
+                    </button>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="cancel-settings-btn" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" id="save-settings-btn" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chatbot Assistant Widget -->
+    <div class="chatbot-wrapper">
+        <!-- Floating Trigger Button -->
+        <button id="chatbot-trigger-btn" class="chatbot-trigger" title="AI ZenBot Assistant" aria-label="Open ZenBot Assistant">
+            <i class="fa-solid fa-robot"></i>
+            <span class="chatbot-trigger-pulse"></span>
+        </button>
+        
+        <!-- Chat Window -->
+        <div id="chatbot-window" class="chatbot-window glass-card">
+            <div class="chatbot-header">
+                <div class="chatbot-title">
+                    <i class="fa-solid fa-robot" style="color: var(--primary);"></i>
+                    <span>ZenBot Assistant</span>
+                </div>
+                <button id="close-chatbot-btn" class="close-btn" aria-label="Close Assistant">&times;</button>
+            </div>
+            
+            <div id="chatbot-messages" class="chatbot-messages">
+                <div class="chat-msg bot">
+                    Hello! I am ZenBot, your productivity assistant. Ask me "What should I do today?" or ask me to list your tasks!
+                </div>
+            </div>
+            
+            <form id="chatbot-form" class="chatbot-input-area">
+                <input type="text" id="chatbot-input" placeholder="Type a message..." required autocomplete="off" maxlength="300">
+                <button type="submit" class="chatbot-send-btn" aria-label="Send message">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% endif %}
+
+    <!-- Global Theme Script -->
+    <script>
+        const themeBtn = document.getElementById('theme-toggle-btn');
+        if (themeBtn) {
+            themeBtn.addEventListener('click', () => {
+                const html = document.documentElement;
+                let activeTheme = html.getAttribute('data-theme');
+                let nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
+                html.setAttribute('data-theme', nextTheme);
+                localStorage.setItem('zentask-theme', nextTheme);
+                const icon = themeBtn.querySelector('i');
+                if (icon) {
+                    icon.className = nextTheme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+                }
+                window.dispatchEvent(new CustomEvent('themechanged', { detail: { theme: nextTheme } }));
+            });
+            
+            const currentTheme = localStorage.getItem('zentask-theme') || 'dark';
+            const icon = themeBtn.querySelector('i');
+            if (icon) {
+                icon.className = currentTheme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="glass-card auth-card error-card animate-pop" style="text-align: center; max-width: 480px;">
+        <div class="error-code-badge" style="display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%; background: rgba(244, 63, 94, 0.15); color: var(--priority-high); font-size: 1.85rem; font-family: var(--font-display); font-weight: 800; margin: 0 auto 1.25rem;">
+            {{ code|default('404') }}
+        </div>
+        <h2 style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
+            {{ title|default('Page Not Found') }}
+        </h2>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.75rem; line-height: 1.5;">
+            {{ message|default('The page or resource you are looking for does not exist or an unexpected error occurred.') }}
+        </p>
+        <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ url_for('index') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+                <i class="fa-solid fa-house"></i> Return Home
+            </a>
+            {% if not g.user %}
+            <a href="{{ url_for('login') }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+                <i class="fa-solid fa-right-to-bracket"></i> Log In
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
