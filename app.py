@@ -35,17 +35,28 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
-# File Upload Security Settings
+# File Upload Security Settings & Vercel Serverless Path Handling
+IS_VERCEL = bool(os.environ.get('VERCEL'))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+
+if IS_VERCEL:
+    UPLOAD_FOLDER = '/tmp/uploads'
+    db_path = '/tmp/todo.db'
+else:
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+    db_path = os.path.join(BASE_DIR, 'todo.db')
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max limit
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'txt', 'csv', 'docx', 'xlsx', 'zip', 'json', 'md'}
 
-# Database Configuration
-db_path = os.path.join(BASE_DIR, 'todo.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or f'sqlite:///{db_path}'
+# Database Configuration (supports postgresql://, sqlite://, etc.)
+raw_db_url = os.environ.get('DATABASE_URL')
+if raw_db_url and raw_db_url.startswith("postgres://"):
+    raw_db_url = raw_db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = raw_db_url or f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 from flask_sqlalchemy import SQLAlchemy
@@ -1065,9 +1076,11 @@ with app.app_context():
     upgrade_db()
     db.create_all()
 
-scheduler_thread = threading.Thread(target=run_email_scheduler, args=(app,), daemon=True)
-scheduler_thread.start()
+if not IS_VERCEL:
+    scheduler_thread = threading.Thread(target=run_email_scheduler, args=(app,), daemon=True)
+    scheduler_thread.start()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=app.config['DEBUG'])
+
