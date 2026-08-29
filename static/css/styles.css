@@ -1129,6 +1129,37 @@ body {
 /* ==========================================================================
    Modals & Forms
    ========================================================================== */
+/* Custom Glassmorphic Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+}
+[data-theme="light"] * {
+    scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -1156,12 +1187,13 @@ body {
 .modal-content {
     width: 100%;
     max-width: 520px;
-    max-height: 88vh;
+    max-height: 85vh;
     overflow-y: auto;
-    padding: 1.5rem;
+    padding: 1.5rem 1.5rem 0 1.5rem;
     display: flex;
     flex-direction: column;
     border-radius: 1.25rem;
+    position: relative;
 }
 
 .modal-header {
@@ -1244,13 +1276,98 @@ body {
     flex: 1;
 }
 
+/* Toggle Switch */
+.toggle-switch-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.35rem 0;
+    margin-bottom: 0.65rem;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    transition: var(--transition-smooth);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #ffffff;
+    transition: var(--transition-smooth);
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.switch input:checked + .slider {
+    background: var(--primary-gradient);
+    border-color: var(--primary);
+}
+
+.switch input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+.slider.round {
+    border-radius: 22px;
+}
+
+.switch-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    margin: 0;
+}
+
+.settings-divider {
+    height: 1px;
+    background: var(--card-border);
+    margin: 0.75rem 0 0.85rem 0;
+}
+
 .modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 0.65rem;
-    margin-top: 1rem;
-    padding-top: 0.85rem;
+    margin-top: 1.25rem;
+    padding: 0.85rem 1.5rem 1rem 1.5rem;
     border-top: 1px solid var(--card-border);
+    position: sticky;
+    bottom: 0;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 10;
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    border-bottom-left-radius: 1.25rem;
+    border-bottom-right-radius: 1.25rem;
 }
 
 /* Attachment Upload Zone */
@@ -1287,7 +1404,7 @@ body {
 }
 
 .code-viewer {
-    background: rgba(0, 0, 0, 0.25);
+    background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--card-border);
     border-radius: 0.5rem;
     padding: 0.75rem;
@@ -1300,10 +1417,8 @@ body {
 }
 
 .settings-section-title {
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    border-top: 1px solid var(--card-border);
-    padding-top: 0.85rem;
+    margin-top: 0.25rem;
+    font-size: 0.925rem;
     font-family: var(--font-display);
 }
 

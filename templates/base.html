@@ -130,10 +130,16 @@
                     <label for="settings-email">Email Address for Reminders</label>
                     <input type="email" id="settings-email" placeholder="name@example.com" maxlength="120">
                 </div>
-                <div class="form-group checkbox-group" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" id="settings-reminders-enabled" style="width: 1.1rem; height: 1.1rem; cursor: pointer;">
-                    <label for="settings-reminders-enabled" style="margin: 0; cursor: pointer; font-size: 0.9rem;">Enable Daily Email Reminders</label>
+                
+                <div class="toggle-switch-wrapper">
+                    <label class="switch">
+                        <input type="checkbox" id="settings-reminders-enabled">
+                        <span class="slider round"></span>
+                    </label>
+                    <label for="settings-reminders-enabled" class="switch-label">Enable Daily Email Reminders</label>
                 </div>
+                
+                <div class="settings-divider"></div>
                 
                 <h3 class="settings-section-title">SMTP Mail Server (Optional)</h3>
                 <p class="settings-section-desc">By default, reminders are simulated and logged safely. Configure SMTP credentials below to send live emails.</p>

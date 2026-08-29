@@ -829,7 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const allVisibleCards = document.querySelectorAll('.tasks-grid .task-card');
             
             allVisibleCards.forEach((card, index) => {
-                const id = parseInt(card.getAttribute('data-id'));
+                const id = card.getAttribute('data-id');
                 updatedOrders.push({ id: id, position: index });
             });
 
