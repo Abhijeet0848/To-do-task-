@@ -59,15 +59,17 @@
         </div>
         
         <div class="action-buttons">
-            <a href="/api/tasks/export/csv" class="btn btn-secondary" title="Export tasks to CSV file" aria-label="Export to CSV">
-                <i class="fa-solid fa-file-csv"></i> <span>CSV</span>
-            </a>
-            <a href="/api/tasks/export/pdf" class="btn btn-secondary" title="Export tasks to PDF document" aria-label="Export to PDF">
-                <i class="fa-solid fa-file-pdf"></i> <span>PDF</span>
-            </a>
-            <button id="add-task-btn" class="btn btn-primary" aria-label="Add New Task">
+            <button id="add-task-btn" class="btn btn-primary add-task-main-btn" aria-label="Add New Task">
                 <i class="fa-solid fa-plus"></i> <span>Add Task</span>
             </button>
+            <div class="export-btn-group">
+                <a href="/api/tasks/export/csv" class="btn btn-secondary export-btn" title="Export tasks to CSV file" aria-label="Export to CSV">
+                    <i class="fa-solid fa-file-csv"></i> <span>CSV</span>
+                </a>
+                <a href="/api/tasks/export/pdf" class="btn btn-secondary export-btn" title="Export tasks to PDF document" aria-label="Export to PDF">
+                    <i class="fa-solid fa-file-pdf"></i> <span>PDF</span>
+                </a>
+            </div>
         </div>
     </section>
 
