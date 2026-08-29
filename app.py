@@ -16,6 +16,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for, g, flash, abort
 
@@ -564,6 +565,117 @@ def logout():
     session.clear()
     flash('You have been logged out safely.', 'success')
     return redirect(url_for('login'))
+
+def get_reset_serializer():
+    return URLSafeTimedSerializer(app.secret_key)
+
+def send_password_reset_email(user, reset_url):
+    log_path = os.path.join(BASE_DIR, 'sent_emails.log')
+    email_content = f"""Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+To: {user.email}
+Subject: ZenTask - Password Reset Request
+--------------------------------------------------
+Hi {user.username},
+
+You recently requested to reset your ZenTask password. Please click the link below to set a new password:
+{reset_url}
+
+This link is valid for 1 hour. If you did not request this, please ignore this email.
+
+ZenTask Security Team
+--------------------------------------------------
+"""
+    try:
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(email_content + "\n\n")
+    except Exception as e:
+        print(f"Failed to log reset email: {e}")
+
+    settings = user.settings or SystemSettings.query.filter(SystemSettings.smtp_server.isnot(None)).first()
+    if settings and settings.smtp_server and settings.smtp_user and settings.smtp_password:
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = settings.smtp_user
+            msg['To'] = user.email
+            msg['Subject'] = "ZenTask - Password Reset Request"
+            body = f"Hi {user.username},\n\nPlease use the following link to reset your ZenTask password (valid for 1 hour):\n{reset_url}\n\nIf you did not make this request, you can safely ignore this email."
+            msg.attach(MIMEText(body, 'plain'))
+            server = smtplib.SMTP(settings.smtp_server, settings.smtp_port, timeout=10)
+            server.starttls()
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.sendmail(settings.smtp_user, user.email, msg.as_string())
+            server.quit()
+        except Exception as err:
+            print(f"SMTP reset email error: {err}")
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if g.user:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        client_ip = request.remote_addr or '127.0.0.1'
+        if is_rate_limited(client_ip):
+            flash('Too many requests. Please wait a minute before trying again.', 'danger')
+            return render_template('forgot_password.html'), 429
+
+        email = request.form.get('email', '').strip().lower()
+        if not email or not EMAIL_REGEX.match(email):
+            flash('Please enter a valid email address.', 'danger')
+            return render_template('forgot_password.html'), 400
+
+        user = User.query.filter_by(email=email).first()
+        if user:
+            serializer = get_reset_serializer()
+            token = serializer.dumps(user.email, salt='password-reset-salt')
+            reset_url = url_for('reset_password', token=token, _external=True)
+            send_password_reset_email(user, reset_url)
+            
+        flash('If an account exists with that email, a password reset link has been sent.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if g.user:
+        return redirect(url_for('index'))
+
+    serializer = get_reset_serializer()
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
+    except (SignatureExpired, BadSignature):
+        flash('The password reset link is invalid or has expired. Please request a new one.', 'danger')
+        return redirect(url_for('forgot_password'))
+
+    user = User.query.filter_by(email=email).first_or_404()
+
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        if not password or len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'danger')
+            return render_template('reset_password.html', token=token), 400
+
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return render_template('reset_password.html', token=token), 400
+
+        user.password_hash = generate_password_hash(password)
+        db.session.commit()
+
+        notif = Notification(
+            user_id=user.id,
+            message="Your account password was successfully reset.",
+            type="info"
+        )
+        db.session.add(notif)
+        db.session.commit()
+
+        flash('Your password has been updated successfully! Please log in.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('reset_password.html', token=token)
 
 # ==============================================================================
 # Core Views & Dashboard
