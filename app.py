@@ -591,22 +591,39 @@ ZenTask Security Team
     except Exception as e:
         print(f"Failed to log reset email: {e}")
 
-    settings = user.settings or SystemSettings.query.filter(SystemSettings.smtp_server.isnot(None)).first()
-    if settings and settings.smtp_server and settings.smtp_user and settings.smtp_password:
+    # Check environment variables first, then database settings
+    smtp_server = os.environ.get('SMTP_SERVER')
+    smtp_port = int(os.environ.get('SMTP_PORT', 587))
+    smtp_user = os.environ.get('SMTP_USER')
+    smtp_password = os.environ.get('SMTP_PASSWORD')
+
+    if not (smtp_server and smtp_user and smtp_password):
+        settings = user.settings or SystemSettings.query.filter(SystemSettings.smtp_server.isnot(None)).first()
+        if settings and settings.smtp_server and settings.smtp_user and settings.smtp_password:
+            smtp_server = settings.smtp_server
+            smtp_port = settings.smtp_port or 587
+            smtp_user = settings.smtp_user
+            smtp_password = settings.smtp_password
+
+    if smtp_server and smtp_user and smtp_password:
         try:
             msg = MIMEMultipart()
-            msg['From'] = settings.smtp_user
+            msg['From'] = smtp_user
             msg['To'] = user.email
             msg['Subject'] = "ZenTask - Password Reset Request"
             body = f"Hi {user.username},\n\nPlease use the following link to reset your ZenTask password (valid for 1 hour):\n{reset_url}\n\nIf you did not make this request, you can safely ignore this email."
             msg.attach(MIMEText(body, 'plain'))
-            server = smtplib.SMTP(settings.smtp_server, settings.smtp_port, timeout=10)
+            server = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
             server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
-            server.sendmail(settings.smtp_user, user.email, msg.as_string())
+            server.login(smtp_user, smtp_password)
+            server.sendmail(smtp_user, user.email, msg.as_string())
             server.quit()
+            return True, "Email delivered via SMTP"
         except Exception as err:
             print(f"SMTP reset email error: {err}")
+            return False, f"SMTP error: {err}"
+
+    return False, "No SMTP server configured"
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
@@ -628,10 +645,17 @@ def forgot_password():
             serializer = get_reset_serializer()
             token = serializer.dumps(user.email, salt='password-reset-salt')
             reset_url = url_for('reset_password', token=token, _external=True)
-            send_password_reset_email(user, reset_url)
+            sent, reason = send_password_reset_email(user, reset_url)
             
-        flash('If an account exists with that email, a password reset link has been sent.', 'success')
-        return redirect(url_for('login'))
+            if sent:
+                flash(f"A password reset link has been emailed to <strong>{user.email}</strong>.", 'success')
+            else:
+                # Direct simulation link provided when SMTP is not configured
+                flash(f"Password reset link generated! <a href='{reset_url}' style='color: var(--primary); text-decoration: underline; font-weight: 700;'>Click here to reset password now</a>", 'success')
+        else:
+            flash('If an account exists with that email, a password reset link has been sent.', 'success')
+            
+        return render_template('forgot_password.html')
 
     return render_template('forgot_password.html')
 
