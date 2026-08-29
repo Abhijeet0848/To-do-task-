@@ -771,25 +771,34 @@ body {
     background: transparent;
     border: none;
     cursor: pointer;
-    padding: 0;
+    padding: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    z-index: 10;
+    border-radius: 50%;
+    transition: var(--transition-fast);
+}
+
+.checkbox-btn:hover {
+    background: rgba(99, 102, 241, 0.12);
 }
 
 .checkbox-circle {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     border: 2px solid var(--checkbox-border);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: var(--transition-fast);
+    pointer-events: none;
 }
 
 .checkmark-icon {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: #ffffff;
     opacity: 0;
     transform: scale(0.5);

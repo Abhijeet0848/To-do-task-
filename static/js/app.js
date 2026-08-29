@@ -308,16 +308,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================================
     window.toggleTaskCompletion = async (taskId) => {
         try {
+            const card = document.querySelector(`.task-card[data-id="${taskId}"]`);
+            if (card) {
+                card.classList.toggle('completed');
+            }
+
             const res = await secureFetch(`/api/tasks/${taskId}/toggle`, { method: 'POST' });
-            if (!res.ok) throw new Error('Toggle failed');
+            if (!res.ok) {
+                if (card) card.classList.toggle('completed');
+                throw new Error('Toggle failed');
+            }
             const data = await res.json();
             
             updateStats(data.stats);
-            const index = allTasks.findIndex(t => t.id === taskId);
-            if (index !== -1) {
-                allTasks[index] = data.task;
-                renderTasksList(allTasks);
-            }
+            await fetchTasks();
             showToast(data.task.is_completed ? "Task marked completed!" : "Task restored to pending", 'success');
         } catch (e) {
             showToast("Failed to update task state", 'danger');
@@ -327,24 +331,31 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteTask = async (taskId) => {
         if (!confirm("Are you sure you want to delete this task?")) return;
         try {
+            const card = document.querySelector(`.task-card[data-id="${taskId}"]`);
+            if (card) card.remove();
+
             const res = await secureFetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Delete failed');
             const data = await res.json();
             
             updateStats(data.stats);
-            allTasks = allTasks.filter(t => t.id !== taskId);
-            renderTasksList(allTasks);
+            await fetchTasks();
             showToast("Task deleted successfully", 'success');
         } catch (e) {
             showToast("Failed to delete task", 'danger');
+            fetchTasks();
         }
     };
 
-    window.openEditModal = (taskId) => {
-        const task = allTasks.find(t => t.id === taskId);
+    window.openEditModal = async (taskId) => {
+        let task = allTasks.find(t => String(t.id) === String(taskId));
+        if (!task) {
+            await fetchTasks();
+            task = allTasks.find(t => String(t.id) === String(taskId));
+        }
         if (!task) return;
 
-        currentEditingTaskId = taskId;
+        currentEditingTaskId = task.id;
         document.getElementById('modal-title').textContent = "Edit Task";
         document.getElementById('task-id-input').value = task.id;
         document.getElementById('task-title-input').value = task.title;
