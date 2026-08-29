@@ -322,7 +322,20 @@ document.addEventListener('DOMContentLoaded', () => {
             
             updateStats(data.stats);
             await fetchTasks();
-            showToast(data.task.is_completed ? "Task marked completed!" : "Task restored to pending", 'success');
+            
+            if (data.task.is_completed) {
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 60,
+                        spread: 70,
+                        origin: { y: 0.75 },
+                        colors: ['#6366f1', '#a855f7', '#10b981', '#f59e0b', '#3b82f6']
+                    });
+                }
+                showToast("Task completed! Keep up the momentum! 🎉", 'success');
+            } else {
+                showToast("Task marked as pending", 'info');
+            }
         } catch (e) {
             showToast("Failed to update task state", 'danger');
         }
@@ -1078,13 +1091,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Global Keydown Listeners (Escape to close modals)
+    // Global Keydown Listeners (Escape to close modals, Ctrl+K to search)
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             if (taskModal?.classList.contains('active')) closeTaskModal();
             if (settingsModal?.classList.contains('active')) closeSettings();
             if (notifPanel?.classList.contains('active')) notifPanel.classList.remove('active');
             if (chatbotWindow?.classList.contains('active')) chatbotWindow.classList.remove('active');
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
         }
     });
 
