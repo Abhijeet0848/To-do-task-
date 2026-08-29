@@ -607,12 +607,41 @@ ZenTask Security Team
 
     if smtp_server and smtp_user and smtp_password:
         try:
-            msg = MIMEMultipart()
+            msg = MIMEMultipart('alternative')
             msg['From'] = smtp_user
             msg['To'] = user.email
-            msg['Subject'] = "ZenTask - Password Reset Request"
-            body = f"Hi {user.username},\n\nPlease use the following link to reset your ZenTask password (valid for 1 hour):\n{reset_url}\n\nIf you did not make this request, you can safely ignore this email."
-            msg.attach(MIMEText(body, 'plain'))
+            msg['Subject'] = "⚡ ZenTask - Password Reset Request"
+            
+            # Plain text fallback
+            text_body = f"Hi {user.username},\n\nPlease use the following link to reset your ZenTask password (valid for 1 hour):\n{reset_url}\n\nIf you did not make this request, you can safely ignore this email."
+            
+            # Rich HTML version
+            html_body = f"""
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"></head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0b10; padding: 24px; color: #f8fafc; margin: 0;">
+                <div style="max-width: 540px; margin: 0 auto; background: #141621; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); padding: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <h1 style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); -webkit-background-clip: text; color: #818cf8; margin: 0;">ZenTask</h1>
+                    </div>
+                    <h2 style="font-size: 18px; font-weight: 700; color: #f8fafc; margin-top: 0;">Password Reset Request</h2>
+                    <p style="font-size: 14px; color: #94a3b8; line-height: 1.6;">Hi <strong>{user.username}</strong>,</p>
+                    <p style="font-size: 14px; color: #94a3b8; line-height: 1.6;">We received a request to reset your ZenTask account password. Tap the button below to choose a new password:</p>
+                    <div style="text-align: center; margin: 28px 0;">
+                        <a href="{reset_url}" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); color: #ffffff; padding: 13px 30px; text-decoration: none; font-weight: 700; font-size: 14px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">Reset My Password</a>
+                    </div>
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.5;">This link is valid for <strong>1 hour</strong>. If you didn't request a password reset, you can safely ignore this email.</p>
+                    <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 24px 0 16px 0;">
+                    <p style="font-size: 11px; color: #64748b; line-height: 1.4; word-break: break-all;">Or copy and paste this link into your browser:<br><a href="{reset_url}" style="color: #818cf8;">{reset_url}</a></p>
+                </div>
+            </body>
+            </html>
+            """
+            
+            msg.attach(MIMEText(text_body, 'plain'))
+            msg.attach(MIMEText(html_body, 'html'))
+            
             server = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
             server.starttls()
             server.login(smtp_user, smtp_password)
@@ -648,12 +677,11 @@ def forgot_password():
             sent, reason = send_password_reset_email(user, reset_url)
             
             if sent:
-                flash(f"A password reset link has been emailed to <strong>{user.email}</strong>.", 'success')
+                flash(f"✅ A password reset link has been emailed to <strong>{user.email}</strong>. Please check your inbox (and spam folder).", 'success')
             else:
-                # Direct simulation link provided when SMTP is not configured
-                flash(f"Password reset link generated! <a href='{reset_url}' style='color: var(--primary); text-decoration: underline; font-weight: 700;'>Click here to reset password now</a>", 'success')
+                flash(f"⚡ Password reset link generated! <a href='{reset_url}' style='color: var(--primary); text-decoration: underline; font-weight: 700;'>Click here to reset your password now</a>", 'success')
         else:
-            flash('If an account exists with that email, a password reset link has been sent.', 'success')
+            flash(f"❌ No account found with email <strong>{email}</strong>. Please check your spelling or <a href='{url_for('signup')}' style='color: var(--primary); text-decoration: underline; font-weight: 600;'>Sign up here</a>.", 'danger')
             
         return render_template('forgot_password.html')
 
