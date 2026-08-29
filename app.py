@@ -490,7 +490,8 @@ def signup():
                 flash('Email address is already registered.', 'danger')
                 return render_template('signup.html'), 400
             password_hash = generate_password_hash(password)
-            MongoUser.create(username, email, password_hash)
+            new_user = MongoUser.create(username, email, password_hash)
+            user_id = new_user.id
         else:
             if User.query.filter_by(username=username).first():
                 flash('Username is already taken.', 'danger')
@@ -507,9 +508,15 @@ def signup():
             welcome_notif = Notification(user_id=user.id, message="Welcome to ZenTask! Organize your life with clarity.", type="success")
             db.session.add(welcome_notif)
             db.session.commit()
+            user_id = user.id
         
-        flash('Account created successfully! Please log in.', 'success')
-        return redirect(url_for('login'))
+        # Auto-login newly registered user and redirect straight to dashboard
+        session.clear()
+        session['user_id'] = user_id
+        session.permanent = True
+        generate_csrf_token()
+        flash(f'🎉 Welcome to ZenTask, {username}! Your workspace is ready.', 'success')
+        return redirect(url_for('index'))
         
     return render_template('signup.html')
 
