@@ -107,7 +107,7 @@
                         <div class="drag-handle" title="Drag to reorder" aria-label="Drag handle">
                             <i class="fa-solid fa-grip-vertical"></i>
                         </div>
-                        <button class="checkbox-btn" aria-label="Toggle task completion" onclick="toggleTaskCompletion({{ task.id }})">
+                        <button class="checkbox-btn" aria-label="Toggle task completion" onclick="toggleTaskCompletion('{{ task.id }}')">
                             <span class="checkbox-circle">
                                 <i class="fa-solid fa-check checkmark-icon"></i>
                             </span>
@@ -139,21 +139,21 @@
 
                         <div class="task-meta">
                             {% if task.due_date %}
-                                <span class="task-due {% if not task.is_completed and task.due_date < date.today() %}overdue{% endif %}">
-                                    <i class="fa-regular fa-calendar-days"></i> Due: {{ task.due_date.strftime('%b %d, %Y') }}
+                                <span class="task-due">
+                                    <i class="fa-regular fa-calendar-days"></i> Due: {{ task.due_date.strftime('%b %d, %Y') if task.due_date.strftime is defined else task.due_date }}
                                 </span>
                             {% endif %}
                             <span class="task-created">
-                                <i class="fa-regular fa-clock"></i> {{ task.created_at.strftime('%b %d') }}
+                                <i class="fa-regular fa-clock"></i> {{ task.created_at.strftime('%b %d') if task.created_at.strftime is defined else (task.created_at[:10] if task.created_at else '') }}
                             </span>
                         </div>
                     </div>
 
                     <div class="task-card-actions">
-                        <button class="action-icon-btn edit-btn" title="Edit Task" aria-label="Edit Task" onclick="openEditModal({{ task.id }})">
+                        <button class="action-icon-btn edit-btn" title="Edit Task" aria-label="Edit Task" onclick="openEditModal('{{ task.id }}')">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>
-                        <button class="action-icon-btn delete-btn" title="Delete Task" aria-label="Delete Task" onclick="deleteTask({{ task.id }})">
+                        <button class="action-icon-btn delete-btn" title="Delete Task" aria-label="Delete Task" onclick="deleteTask('{{ task.id }}')">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>

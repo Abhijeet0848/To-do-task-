@@ -171,6 +171,21 @@ class MongoSettings:
         mdb.system_settings.update_one({"user_id": str(user_id)}, {"$set": update_fields}, upsert=True)
         return MongoSettings.get_or_create(user_id)
 
+def parse_flexible_date(val):
+    if not val:
+        return None
+    if isinstance(val, date):
+        return val
+    if isinstance(val, datetime):
+        return val.date()
+    val_str = str(val).strip()
+    for fmt in ('%Y-%m-%d', '%d-%m-%Y', '%m-%d-%Y', '%d/%m/%Y', '%Y/%m/%d'):
+        try:
+            return datetime.strptime(val_str, fmt).date()
+        except (ValueError, TypeError):
+            pass
+    return None
+
 # ==============================================================================
 # Task Operations
 # ==============================================================================
@@ -185,15 +200,7 @@ class MongoTask:
         self.category = doc.get('category', 'personal')
         
         raw_due = doc.get('due_date')
-        if isinstance(raw_due, datetime):
-            self.due_date = raw_due.date()
-        elif isinstance(raw_due, str) and raw_due:
-            try:
-                self.due_date = date.fromisoformat(raw_due)
-            except Exception:
-                self.due_date = None
-        else:
-            self.due_date = None
+        self.due_date = parse_flexible_date(raw_due)
             
         self.is_completed = doc.get('is_completed', False)
         self.created_at = doc.get('created_at', datetime.now())
@@ -256,8 +263,9 @@ class MongoTask:
     @staticmethod
     def create(user_id, title, description, priority, category, due_date):
         mdb = get_mongo_db()
+        parsed_due = parse_flexible_date(due_date)
+        due_iso = parsed_due.isoformat() if parsed_due else ""
         count = mdb.tasks.count_documents({"user_id": str(user_id)})
-        due_iso = due_date.isoformat() if due_date else ""
         
         doc = {
             "user_id": str(user_id),

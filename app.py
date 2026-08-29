@@ -237,6 +237,21 @@ if not USE_MONGO:
 # ==============================================================================
 # Helper Functions
 # ==============================================================================
+def parse_flexible_date(val):
+    if not val:
+        return None
+    if isinstance(val, date):
+        return val
+    if isinstance(val, datetime):
+        return val.date()
+    val_str = str(val).strip()
+    for fmt in ('%Y-%m-%d', '%d-%m-%Y', '%m-%d-%Y', '%d/%m/%Y', '%Y/%m/%d'):
+        try:
+            return datetime.strptime(val_str, fmt).date()
+        except (ValueError, TypeError):
+            pass
+    return None
+
 def get_task_stats(user_id):
     if USE_MONGO:
         return get_mongo_stats(user_id)
@@ -692,12 +707,7 @@ def create_task():
         category = 'personal'
         
     due_date_str = data.get('due_date')
-    due_date = None
-    if due_date_str:
-        try:
-            due_date = date.fromisoformat(due_date_str)
-        except ValueError:
-            pass
+    due_date = parse_flexible_date(due_date_str)
 
     if USE_MONGO:
         task = MongoTask.create(g.user.id, title, description, priority, category, due_date)
@@ -746,10 +756,7 @@ def update_task(task_id):
             task.category = data.get('category')
         if 'due_date' in data:
             due_date_str = data.get('due_date')
-            try:
-                task.due_date = date.fromisoformat(due_date_str) if due_date_str else None
-            except ValueError:
-                task.due_date = None
+            task.due_date = parse_flexible_date(due_date_str)
         db.session.commit()
         return jsonify({'task': task.to_dict(), 'stats': get_task_stats(g.user.id)})
 

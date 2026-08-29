@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="drag-handle" title="Drag to reorder">
                             <i class="fa-solid fa-grip-vertical"></i>
                         </div>
-                        <button class="checkbox-btn" aria-label="Toggle Complete" onclick="window.toggleTaskCompletion(${task.id})">
+                        <button class="checkbox-btn" aria-label="Toggle Complete" onclick="window.toggleTaskCompletion('${task.id}')">
                             <span class="checkbox-circle">
                                 <i class="fa-solid fa-check checkmark-icon"></i>
                             </span>
@@ -288,10 +288,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
 
                     <div class="task-card-actions">
-                        <button class="action-icon-btn edit-btn" title="Edit Task" aria-label="Edit Task" onclick="window.openEditModal(${task.id})">
+                        <button class="action-icon-btn edit-btn" title="Edit Task" aria-label="Edit Task" onclick="window.openEditModal('${task.id}')">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>
-                        <button class="action-icon-btn delete-btn" title="Delete Task" aria-label="Delete Task" onclick="window.deleteTask(${task.id})">
+                        <button class="action-icon-btn delete-btn" title="Delete Task" aria-label="Delete Task" onclick="window.deleteTask('${task.id}')">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fa-solid fa-paperclip" style="color: var(--primary);"></i>
                     <span>${escapeHTML(att.filename)}</span>
                 </div>
-                <button type="button" class="action-icon-btn delete-btn" onclick="window.removeAttachment(${att.id})" title="Delete Attachment" style="width: 24px; height: 24px;">
+                <button type="button" class="action-icon-btn delete-btn" onclick="window.removeAttachment('${att.id}')" title="Delete Attachment" style="width: 24px; height: 24px;">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
