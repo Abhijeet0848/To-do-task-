@@ -17,7 +17,7 @@ def get_mongo_db():
         
     uri = os.environ.get('MONGODB_URI') or os.environ.get('DATABASE_URL')
     if not uri or not (uri.startswith('mongodb://') or uri.startswith('mongodb+srv://')):
-        uri = "mongodb+srv://gautamabhijeet050_db_user:bML2usiUYnUTTfz6@cluster1.psqpcbf.mongodb.net/zentask?retryWrites=true&w=majority&appName=Cluster1"
+        return None
         
     try:
         client = MongoClient(uri, serverSelectionTimeoutMS=5000)
